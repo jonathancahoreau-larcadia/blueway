@@ -1,0 +1,55 @@
+{
+  "reference": " Technical-Documentation-escali.docx",
+  "reference_sha256": "d0fab9f02bb48995a5144fff6c02180974343677ff4c1df5cd271ce1498d64b4",
+  "original_pdf_sha256": "caa15c97510011f42291d5fd887eaf7055091e9cac0ef4f3d8b38f9712143796",
+  "corrected_pdf_sha256": "237f1cc7cb9d012ad46aedc4315a069d0d20c5c16e8234d8bd3da8ec3715e6a5",
+  "field_comparison": [
+    {
+      "table": "users",
+      "verified_fields": 13
+    },
+    {
+      "table": "boats",
+      "verified_fields": 7
+    },
+    {
+      "table": "devices",
+      "verified_fields": 7
+    },
+    {
+      "table": "device_positions",
+      "verified_fields": 6
+    },
+    {
+      "table": "reports",
+      "verified_fields": 14
+    },
+    {
+      "table": "report_positioning",
+      "verified_fields": 14
+    },
+    {
+      "table": "report_photos",
+      "verified_fields": 9
+    },
+    {
+      "table": "notifications",
+      "verified_fields": 11
+    },
+    {
+      "table": "alert_history",
+      "verified_fields": 8
+    },
+    {
+      "table": "moderation_actions",
+      "verified_fields": 10
+    }
+  ],
+  "verified_fields_total": 99,
+  "verified_foreign_keys": 14,
+  "corrections": [
+    "Three references to missing pages 12-13 replaced with pages 4-5",
+    "Two pages added for constraints and lifecycle rules"
+  ],
+  "structural_contradictions_found": 0
+}
