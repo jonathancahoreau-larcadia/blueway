@@ -1,0 +1,19 @@
+services:
+  database:
+    image: postgis/postgis:17-3.5@sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: blueway
+      POSTGRES_USER: blueway
+      POSTGRES_PASSWORD: ${BLUEWAY_DB_PASSWORD:?Set BLUEWAY_DB_PASSWORD in your environment}
+    ports:
+      - "127.0.0.1:${BLUEWAY_DB_PORT:-55432}:5432"
+    volumes:
+      - blueway_database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blueway -d blueway"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  blueway_database:
