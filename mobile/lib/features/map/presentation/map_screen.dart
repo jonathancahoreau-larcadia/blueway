@@ -22,6 +22,43 @@ class _MapScreenState extends State<MapScreen> {
   bool _isLocating = false;
   String? _locationError;
   MapboxMap? _mapboxMap;
+  String? _mapError;
+
+  void _handleMapLoadError(MapLoadingErrorEventData event) {
+    if (!mounted) return;
+
+    setState(() {
+      _mapError = 'Impossible de charger la carte. Vérifiez votre connexion et réessayez.';
+    });
+  }
+
+  void _handleMapLoaded(MapLoadedEventData event) {
+    if (!mounted || _mapError == null) return;
+
+    setState(() {
+      _mapError = null;
+    });
+  }
+
+  Future<void> _retryMapLoad() async {
+    final map = _mapboxMap;
+
+    if (map == null) return;
+
+    setState(() {
+      _mapError = null;
+    });
+
+    try {
+      await map.loadStyleURI(MapConfig.styleUrl);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _mapError = 'Impossible de charger la carte. Vérifiez votre connexion et réessayez.';
+      });
+    }
+  }
 
   Future<void> _locate() async {
     setState(() {
@@ -97,15 +134,47 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Carte maritime')),
-      body: MapWidget(
-        onMapCreated: (map) {
-          setState(() {
-            _mapboxMap = map;
-          });
-        },
-        styleUri: MapConfig.styleUrl,
-        viewport: _viewport,
+      body: Stack(
+        children: [
+          MapWidget(
+            onMapCreated: (map) {
+              setState(() {
+                _mapboxMap = map;
+              });
+            },
+            onMapLoadedListener: _handleMapLoaded,
+            onMapLoadErrorListener: _handleMapLoadError,
+            styleUri: MapConfig.styleUrl,
+            viewport: _viewport,
+          ),
+          if (_mapError != null)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Theme.of(context).colorScheme.surface,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.map_outlined, size: 48),
+                        const SizedBox(height: 16),
+                        Text(_mapError!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _retryMapLoad,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
+
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -137,6 +206,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ],
       ),
+
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
