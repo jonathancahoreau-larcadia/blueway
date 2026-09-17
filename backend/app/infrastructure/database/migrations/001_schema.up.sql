@@ -245,7 +245,7 @@ END $$;
 CREATE TRIGGER reports_guard BEFORE INSERT OR UPDATE ON blueway.reports
 FOR EACH ROW EXECUTE FUNCTION blueway.guard_report();
 
--- Empêche la réattribution d'une installation à un autre utilisateur.
+-- Empêche la réattribution d'une installation à un autre utilisateur
 CREATE FUNCTION blueway.guard_device_owner() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NEW.user_id IS DISTINCT FROM OLD.user_id OR NEW.installation_id IS DISTINCT FROM OLD.installation_id THEN
