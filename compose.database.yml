@@ -1,7 +1,6 @@
 services:
   database:
-    image: postgis/postgis:17-3.5@sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6
-    platform: linux/amd64
+    image: percona/percona-distribution-postgresql-with-postgis:17@sha256:1dc63f8d7530b941b729e6df81fa43526f80a096b17a76ba439006831dd1fc19
     environment:
       POSTGRES_DB: blueway
       POSTGRES_USER: blueway
