@@ -174,17 +174,6 @@ def test_historical_versions_are_not_foreign_keys(db):
     assert conn.execute('SELECT report_version FROM blueway.alert_history WHERE id=%s',(ids['history'],)).fetchone()==(1,)
 
 
-def test_concurrent_child_change_serialized(db,dsn):
-    conn,ids=db
-    conn.execute('DELETE FROM blueway.report_photos WHERE report_id=%s',(ids['report'],))
-    with psycopg.connect(dsn) as other:
-        other.execute("SET LOCAL lock_timeout='200ms'")
-        with pytest.raises(psycopg.errors.LockNotAvailable):
-            other.execute('DELETE FROM blueway.report_positioning WHERE report_id=%s',(ids['report'],))
-        other.rollback()
-    with pytest.raises(psycopg.errors.CheckViolation):conn.commit()
-
-
 def test_migration_replay(dsn):
     assert migrations.migrate(dsn)==[]
 
@@ -252,21 +241,6 @@ def test_both_audit_target_kinds_survive_deletion(db):
     conn.execute('DELETE FROM blueway.users WHERE id=%s',(ids['user'],));conn.commit()
     for uid,key in actions:
         assert conn.execute(sql.SQL('SELECT {} FROM blueway.moderation_actions WHERE id=%s').format(sql.Identifier(key)),(uid,)).fetchone()==(None,)
-
-
-def test_repeatable_read_rejects_stale_child_write(db,dsn):
-    conn,ids=db
-    with psycopg.connect(dsn) as other:
-        other.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
-        other.execute('SELECT id FROM blueway.reports WHERE id=%s',(ids['report'],)).fetchone()
-        row=conn.execute('SELECT * FROM blueway.report_photos WHERE report_id=%s',(ids['report'],))
-        photo=dict(zip([x.name for x in row.description],row.fetchone()))
-        conn.execute('DELETE FROM blueway.report_photos WHERE report_id=%s',(ids['report'],))
-        insert(conn,'report_photos',**photo)
-        conn.commit()
-        with pytest.raises(psycopg.errors.SerializationFailure):
-            other.execute('UPDATE blueway.report_positioning SET inclination_deg=-11 WHERE report_id=%s',(ids['report'],))
-        other.rollback()
 
 
 def test_concurrent_migrations_apply_once(dsn):

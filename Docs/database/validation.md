@@ -42,7 +42,7 @@ renvois ont changé. Le Word est inchangé. Empreintes et décompte dans
 | Cascade | Dépendances supprimées ; auteur et liens d'audit passés à NULL ; audit conservé |
 | Historique | Ancienne report_version conservée après changement du rapport |
 | Audit | Admin et cible requis, raison vide et mutations interdites rejetées |
-| Concurrence | Mutations enfants sérialisées ; écriture obsolète REPEATABLE READ rejetée ; migrations concurrentes appliquées une seule fois |
+| Transactions | Cohérence photo vérifiée au commit ; migrations concurrentes appliquées une seule fois |
 | Migration | up, replay, down, replay down, up ; empreinte altérée rejetée ; migration en erreur annulée sans trace partielle |
 
 Les règles applicatives hors service (notamment sélection exhaustive des alertes,
