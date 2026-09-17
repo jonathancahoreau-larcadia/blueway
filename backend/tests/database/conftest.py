@@ -1,17 +1,65 @@
-import importlib.util
 import os
 from pathlib import Path
+import subprocess
+import sys
 import uuid
 
+from alembic import command
+from alembic.config import Config
 import psycopg
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
+from sqlalchemy.pool import NullPool
 
 ROOT = Path(__file__).resolve().parents[3]
-spec = importlib.util.spec_from_file_location('blueway_migrate', ROOT / 'backend/app/infrastructure/database/migrate.py')
-migrations = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(migrations)
+ALEMBIC_INI = ROOT / 'backend/alembic.ini'
+
+
+def sqlalchemy_url(dsn):
+    params = conninfo_to_dict(dsn)
+    return URL.create(
+        'postgresql+psycopg',
+        username=params.get('user'),
+        password=params.get('password'),
+        host=params.get('host'),
+        port=int(params['port']) if params.get('port') else None,
+        database=params.get('dbname'),
+    )
+
+
+def run_alembic(dsn, operation, revision):
+    config = Config(str(ALEMBIC_INI))
+    engine = create_engine(sqlalchemy_url(dsn), poolclass=NullPool)
+    try:
+        with engine.connect() as connection:
+            config.attributes['connection'] = connection
+            operation(config, revision)
+    finally:
+        engine.dispose()
+
+
+def upgrade_database(dsn, revision='head'):
+    run_alembic(dsn, command.upgrade, revision)
+
+
+def downgrade_database(dsn, revision='base'):
+    run_alembic(dsn, command.downgrade, revision)
+
+
+def upgrade_database_cli(dsn):
+    env = os.environ.copy()
+    env['DATABASE_URL'] = sqlalchemy_url(dsn).render_as_string(hide_password=False)
+    subprocess.run(
+        [sys.executable, '-m', 'alembic', '-c', str(ALEMBIC_INI), 'upgrade', 'head'],
+        cwd=ROOT / 'backend',
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 @pytest.fixture(scope='session')
@@ -25,7 +73,7 @@ def dsn():
     with psycopg.connect(admin_dsn, autocommit=True) as admin:
         admin.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(name)))
     try:
-        migrations.migrate(test_dsn)
+        upgrade_database(test_dsn)
         yield test_dsn
     finally:
         with psycopg.connect(admin_dsn, autocommit=True) as admin:

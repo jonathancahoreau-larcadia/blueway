@@ -1,3 +1,4 @@
+-r app/infrastructure/database/requirements.txt
 fastapi
 uvicorn[standard]
 pytest

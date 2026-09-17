@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import psycopg
 from psycopg import sql
 import pytest
-from conftest import insert, migrations
+from conftest import downgrade_database, insert, upgrade_database, upgrade_database_cli
 
 CONTRACT = json.loads(Path(__file__).with_name('schema_contract.json').read_text())
 
@@ -175,30 +175,22 @@ def test_historical_versions_are_not_foreign_keys(db):
 
 
 def test_migration_replay(dsn):
-    assert migrations.migrate(dsn)==[]
+    upgrade_database(dsn)
+    with psycopg.connect(dsn) as conn:
+        assert conn.execute('SELECT version_num FROM alembic_version').fetchone()==('20260917_0001',)
 
 
-def test_migrations_roundtrip_checksum_and_atomic_failure(dsn,tmp_path):
-    import shutil
+def test_migrations_roundtrip(dsn):
     with psycopg.connect(dsn) as conn:
         before=conn.execute("SELECT tablename,indexdef FROM pg_indexes WHERE schemaname='blueway' ORDER BY tablename,indexname").fetchall()
-    assert migrations.migrate(dsn,'down')==['reverted 001_schema']
-    assert migrations.migrate(dsn,'down')==[]
-    assert migrations.migrate(dsn)==['applied 001_schema']
-    assert migrations.migrate(dsn)==[]
+    downgrade_database(dsn)
+    downgrade_database(dsn)
+    upgrade_database(dsn)
+    upgrade_database(dsn)
     with psycopg.connect(dsn) as conn:
         after=conn.execute("SELECT tablename,indexdef FROM pg_indexes WHERE schemaname='blueway' ORDER BY tablename,indexname").fetchall()
+        assert conn.execute('SELECT count(*) FROM alembic_version').fetchone()==(1,)
     assert before==after
-    for path in migrations.MIGRATIONS.iterdir():shutil.copy(path,tmp_path)
-    up=tmp_path/'001_schema.up.sql'
-    up.write_text(up.read_text()+'\n-- unexpected modification\n')
-    with pytest.raises(ValueError,match='modified applied'):migrations.migrate(dsn,migrations=tmp_path)
-    shutil.copy(migrations.MIGRATIONS/'001_schema.up.sql',up)
-    (tmp_path/'002_broken.up.sql').write_text('CREATE TABLE blueway.should_rollback(id int); SELECT missing_column;')
-    with pytest.raises(psycopg.errors.UndefinedColumn):migrations.migrate(dsn,migrations=tmp_path)
-    with psycopg.connect(dsn) as conn:
-        assert conn.execute("SELECT to_regclass('blueway.should_rollback')").fetchone()==(None,)
-        assert conn.execute('SELECT count(*) FROM blueway_meta.schema_migrations').fetchone()==(1,)
 
 
 def test_foreign_keys_reject_missing_parents(db):
@@ -244,7 +236,9 @@ def test_both_audit_target_kinds_survive_deletion(db):
 
 
 def test_concurrent_migrations_apply_once(dsn):
-    migrations.migrate(dsn,'down')
+    downgrade_database(dsn)
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results=list(pool.map(migrations.migrate,[dsn,dsn]))
-    assert sorted(results,key=len)==[[],['applied 001_schema']]
+        list(pool.map(upgrade_database_cli,[dsn,dsn]))
+    with psycopg.connect(dsn) as conn:
+        assert conn.execute('SELECT count(*) FROM alembic_version').fetchone()==(1,)
+        assert conn.execute("SELECT to_regclass('blueway.users') IS NOT NULL").fetchone()==(True,)
