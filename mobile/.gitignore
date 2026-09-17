@@ -46,3 +46,12 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Secrets
+/.env.json
+
+# Generated Android files
+/android/build/
+
+# Generated Xcode project resolution
+/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
