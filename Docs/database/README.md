@@ -25,8 +25,14 @@ export DATABASE_URL='postgresql://blueway:un-mot-de-passe-local-a-vous@127.0.0.1
 ```
 
 Encoder le mot de passe dans l'URL s'il contient des caractères réservés.
-Compose accepte aussi un fichier `.env` ignoré par Git ; un fichier local a été créé
-pour la validation. Il contient le mot de passe et le port, jamais les données métier.
+Compose accepte aussi un fichier `.env` ignoré par Git. Copier le modèle versionné puis
+remplacer son mot de passe avant de démarrer la base :
+
+```sh
+cp .env.example .env
+```
+
+Le fichier local contient le mot de passe et le port, jamais les données métier.
 Le port est limité à `127.0.0.1`. L'image est figée par digest et utilise `linux/amd64`
 (émulation Docker sur Mac Apple Silicon). Le volume `blueway_database` conserve les données.
 Les migrations sont explicites, indépendantes de l'initialisation du volume.
