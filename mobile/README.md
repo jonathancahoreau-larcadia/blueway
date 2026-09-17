@@ -1,17 +1,33 @@
 # blueway
 
-A new Flutter project.
+## Développement
 
-## Getting Started
+Depuis le dossier `mobile/` :
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter devices
+flutter run -d <device-id>
+```
 
-A few resources to get you started if this is your first Flutter project:
+Remplacer `<device-id>` par l’identifiant affiché par `flutter devices`.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Configuration de l’API
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Lorsque le backend sera disponible :
+
+```bash
+flutter run -d <device-id> --dart-define=API_BASE_URL=https://adresse-du-backend/
+```
+
+Remplacer l’URL par celle du backend accessible depuis l’appareil.
+
+L’écran des signalements utilise actuellement des données fictives.
+Le service HTTP est préparé et testé, mais n’est pas encore connecté à cet écran.
+
+## Vérifications
+
+```bash
+flutter analyze
+flutter test
+```
