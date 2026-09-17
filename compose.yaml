@@ -1,0 +1,38 @@
+services:
+  database:
+    image: percona/percona-distribution-postgresql-with-postgis:17@sha256:1dc63f8d7530b941b729e6df81fa43526f80a096b17a76ba439006831dd1fc19
+
+    environment:
+      POSTGRES_DB: blueway
+      POSTGRES_USER: blueway
+      POSTGRES_PASSWORD: ${BLUEWAY_DB_PASSWORD:?Set BLUEWAY_DB_PASSWORD in your environment}
+
+    ports:
+      - "127.0.0.1:${BLUEWAY_DB_PORT:-55432}:5432"
+
+    volumes:
+      - blueway_database:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blueway -d blueway"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: "postgresql://blueway:${BLUEWAY_DB_PASSWORD}@database:5432/blueway"
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  blueway_database:
