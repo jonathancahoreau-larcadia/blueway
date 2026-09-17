@@ -1,10 +1,10 @@
 name: Database service
 on:
   pull_request:
-    paths: ['backend/app/infrastructure/database/**', 'backend/tests/database/**', 'compose.database.yml', '.github/workflows/database.yml']
+    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'compose.database.yml', '.github/workflows/database.yml']
   push:
     branches: [dev]
-    paths: ['backend/app/infrastructure/database/**', 'backend/tests/database/**', 'compose.database.yml', '.github/workflows/database.yml']
+    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'compose.database.yml', '.github/workflows/database.yml']
 permissions:
   contents: read
 jobs:
@@ -16,6 +16,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-test-only
           POSTGRES_DB: blueway_test
+          POSTGRES_INITDB_ARGS: --encoding=UTF8
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d blueway_test"
