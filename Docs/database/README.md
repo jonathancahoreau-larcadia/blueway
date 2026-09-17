@@ -69,7 +69,7 @@ sans `DROP SCHEMA ... CASCADE`, afin de ne pas effacer silencieusement des dépe
 - Géographies `Point,4326` non vides, GiST sur les deux colonnes requises, quatre index de recherche complémentaires.
 - Expiration égale à observation + 24 heures, durée d'origine immuable, auteur requis à l'insertion puis nullable uniquement après suppression du compte.
 - Deux enfants obligatoires en mode photo et aucun en mode manuel : contrôle différé au commit, y compris déplacement ou suppression d'un enfant.
-- Chaque mutation enfant écrit/verrouille son parent pour sérialiser les changements concurrents. Au niveau REPEATABLE READ, une transaction obsolète doit être retentée après erreur de sérialisation.
+- Le contrôle différé valide l'état final de la transaction : un rapport photo conserve ses deux lignes enfants, un rapport manuel n'en conserve aucune.
 - Notifications pending avec prochaine tentative ; sent avec date d'acceptation.
 - Propriétaire et UUID d'installation immuables. Audit avec administrateur actif, cible unique adaptée et motif non vide, puis contenu immuable et liens effaçables par suppression du parent.
 - CASCADE pour les dépendances ; SET NULL pour les auteurs et les quatre liens d'audit.

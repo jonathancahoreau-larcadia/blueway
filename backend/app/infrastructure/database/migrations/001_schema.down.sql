@@ -1,4 +1,3 @@
--- Explicit objects only. Keep the shared PostGIS extension and migration ledger.
 DROP TABLE blueway.moderation_actions;
 DROP TABLE blueway.alert_history;
 DROP TABLE blueway.notifications;
@@ -13,5 +12,5 @@ DROP FUNCTION blueway.guard_audit();
 DROP FUNCTION blueway.guard_device_owner();
 DROP FUNCTION blueway.guard_report();
 DROP FUNCTION blueway.check_photo_children();
-DROP FUNCTION blueway.lock_photo_parent();
+DROP FUNCTION blueway.assert_photo_children(uuid);
 DROP SCHEMA blueway;
