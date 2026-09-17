@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../data/demo_reports_service.dart';
+import '../data/reports_service.dart';
 
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key});
+  const ReportsScreen({super.key, this.service});
+
+  final ReportsService? service;
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
@@ -15,7 +18,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   void initState() {
     super.initState();
-    _reports = DemoReportsService().fetchReports();
+    _reports = (widget.service ?? DemoReportsService()).fetchReports();
   }
 
   @override
