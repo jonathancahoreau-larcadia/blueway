@@ -1,0 +1,81 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
+import 'dart:async';
+
+import 'package:blueway/core/api/api_service.dart';
+
+void main() {
+  test('get retourne le contenu pour une réponse HTTP 200', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'GET');
+      expect(request.url, Uri.parse('https://example.com/reports'));
+
+      return http.Response('Réponse de test', 200);
+    });
+
+    addTearDown(client.close);
+
+    final api = ApiService(client: client, baseUrl: 'https://example.com/');
+
+    final result = await api.get('reports');
+
+    expect(result, 'Réponse de test');
+  });
+
+  test('get lève une exception pour une réponse HTTP 500', () async {
+    final client = MockClient((request) async {
+      return http.Response('Erreur serveur', 500);
+    });
+
+    addTearDown(client.close);
+
+    final api = ApiService(client: client, baseUrl: 'https://example.com/');
+
+    await expectLater(
+      api.get('reports'),
+      throwsA(
+        isA<Exception>().having(
+          (error) => error.toString(),
+          'message',
+          contains('Erreur HTTP 500'),
+        ),
+      ),
+    );
+  });
+
+  test('get refuse une URL invalide sans requête HTTP', () async {
+    var requestSent = false;
+
+    final client = MockClient((request) async {
+      requestSent = true;
+      return http.Response('Réponse inattendue', 200);
+    });
+
+    addTearDown(client.close);
+
+    final api = ApiService(client: client, baseUrl: 'adresse-invalide');
+
+    await expectLater(api.get('reports'), throwsA(isA<StateError>()));
+
+    expect(requestSent, isFalse);
+  });
+
+  testWidgets('get expire après 10 secondes sans réponse', (tester) async {
+    final response = Completer<http.Response>();
+    final client = MockClient((request) => response.future);
+
+    addTearDown(client.close);
+
+    final api = ApiService(client: client, baseUrl: 'https://example.com/');
+
+    final verification = expectLater(
+      api.get('reports'),
+      throwsA(isA<TimeoutException>()),
+    );
+
+    await tester.pump(const Duration(seconds: 10));
+    await verification;
+  });
+}
