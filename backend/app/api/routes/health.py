@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
-from psycopg import Error as PsycopgError
+from typing import Annotated
 
-from app.infrastructure.database.connection import check_database_connection
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
+
+from app.dependencies.container import get_database_ready
 
 
 router = APIRouter()
@@ -9,22 +11,14 @@ router = APIRouter()
 
 @router.get("/health")
 def health_check():
-    try:
-        database_ok = check_database_connection()
+    return {"status": "ok"}
 
-    except (PsycopgError, KeyError) as exc:
-        raise HTTPException(
-            status_code=503,
-            detail="Database unavailable",
-        ) from exc
 
-    if not database_ok:
-        raise HTTPException(
+@router.get("/health/ready", responses={503: {"description": "Database unavailable"}})
+def readiness_check(database_ready: Annotated[bool, Depends(get_database_ready)]):
+    if not database_ready:
+        return JSONResponse(
             status_code=503,
-            detail="Database unavailable",
+            content={"status": "not_ready", "database": "unavailable"},
         )
-
-    return {
-        "status": "ok",
-        "database": "ok",
-    }
+    return {"status": "ready", "database": "ok"}

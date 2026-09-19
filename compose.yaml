@@ -6,6 +6,7 @@ services:
       POSTGRES_DB: blueway
       POSTGRES_USER: blueway
       POSTGRES_PASSWORD: ${BLUEWAY_DB_PASSWORD:?Set BLUEWAY_DB_PASSWORD in your environment}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
 
     ports:
       - "127.0.0.1:${BLUEWAY_DB_PORT:-55432}:5432"
