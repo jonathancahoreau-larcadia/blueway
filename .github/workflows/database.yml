@@ -1,37 +1,37 @@
 name: Database service
 on:
   pull_request:
-    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'compose.database.yml', '.github/workflows/database.yml']
+    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'Dockerfile.postgres', 'compose.yaml', '.github/workflows/database.yml']
   push:
     branches: [dev]
-    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'compose.database.yml', '.github/workflows/database.yml']
+    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'Dockerfile.postgres', 'compose.yaml', '.github/workflows/database.yml']
 permissions:
   contents: read
 jobs:
   postgis:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: percona/percona-distribution-postgresql-with-postgis:17@sha256:1dc63f8d7530b941b729e6df81fa43526f80a096b17a76ba439006831dd1fc19
-        env:
-          POSTGRES_PASSWORD: ci-test-only
-          POSTGRES_DB: blueway_test
-          POSTGRES_INITDB_ARGS: --encoding=UTF8
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U postgres -d blueway_test"
-          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      BLUEWAY_DB_PASSWORD: ci-test-only
+      BLUEWAY_DB_PORT: '55432'
     steps:
       - uses: actions/checkout@v4
+      - name: Build and start PostgreSQL with PostGIS
+        run: docker compose up -d --build --wait database
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install -r backend/tests/database/requirements.txt
       - run: python -m pytest backend/tests/database -q --junitxml=database-test-results.xml
         env:
-          BLUEWAY_TEST_ADMIN_URL: postgresql://postgres:ci-test-only@localhost:5432/blueway_test
+          BLUEWAY_TEST_ADMIN_URL: postgresql://blueway:ci-test-only@localhost:55432/blueway
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: database-test-results
           path: database-test-results.xml
+      - name: Show database logs
+        if: failure()
+        run: docker compose logs database
+      - name: Stop database
+        if: always()
+        run: docker compose down --volumes
