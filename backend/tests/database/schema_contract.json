@@ -18,7 +18,7 @@
     {
       "name": "email",
       "type": "varchar(254)",
-      "nullable": true
+      "nullable": false
     },
     {
       "name": "date_of_birth",

@@ -177,7 +177,7 @@ def test_historical_versions_are_not_foreign_keys(db):
 def test_migration_replay(dsn):
     upgrade_database(dsn)
     with psycopg.connect(dsn) as conn:
-        assert conn.execute('SELECT version_num FROM alembic_version').fetchone()==('20260917_0001',)
+        assert conn.execute('SELECT version_num FROM alembic_version').fetchone()==('20260920_0002',)
 
 
 def test_migrations_roundtrip(dsn):
@@ -204,7 +204,12 @@ def test_nullable_unique_values_and_defaults(db):
     assert conn.execute('SELECT show_user_name,show_boat_info,notifications_enabled FROM blueway.users WHERE id=%s',(ids['user'],)).fetchone()==(False,False,False)
     assert conn.execute('SELECT version FROM blueway.reports WHERE id=%s',(ids['report'],)).fetchone()==(1,)
     assert conn.execute('SELECT attempt_count FROM blueway.notifications WHERE id=%s',(ids['notification'],)).fetchone()==(0,)
-    conn.execute('UPDATE blueway.users SET email=NULL WHERE id IN (%s,%s)',(ids['user'],ids['admin']));conn.commit()
+
+    with pytest.raises(psycopg.errors.NotNullViolation):
+        conn.execute(
+            'UPDATE blueway.users SET email=NULL WHERE id=%s',
+            (ids['user'],),
+        )
 
 
 @pytest.mark.parametrize('table,field',[('reports','final_position'),('device_positions','position'),('report_positioning','observer_position'),('report_positioning','estimated_position'),('alert_history','position')])
