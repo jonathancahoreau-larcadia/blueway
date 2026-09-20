@@ -1,6 +1,9 @@
 services:
   database:
-    image: percona/percona-distribution-postgresql-with-postgis:17@sha256:1dc63f8d7530b941b729e6df81fa43526f80a096b17a76ba439006831dd1fc19
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: blueway-postgis:17-local
 
     environment:
       POSTGRES_DB: blueway
@@ -31,9 +34,12 @@ services:
     environment:
       DATABASE_URL: "postgresql://blueway:${BLUEWAY_DB_PASSWORD}@database:5432/blueway"
 
+    command: ["sh", "-c", "alembic -c alembic.ini upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+
     depends_on:
       database:
         condition: service_healthy
 
 volumes:
   blueway_database:
+    name: blueway-database
