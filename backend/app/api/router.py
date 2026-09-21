@@ -1,5 +1,8 @@
 from fastapi import APIRouter
 
+from app.api.routes.users import router as users_router
 
-# Inclure ici les futurs routeurs métier avant d'inclure ce routeur dans l'application.
+
 router = APIRouter(prefix="/api/v1")
+
+router.include_router(users_router)
