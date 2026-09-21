@@ -23,6 +23,7 @@ jobs:
       - run: python -m pip install -r backend/tests/database/requirements.txt
       - run: python -m pytest backend/tests/database -q --junitxml=database-test-results.xml
         env:
+          PYTHONPATH: backend
           BLUEWAY_TEST_ADMIN_URL: postgresql://blueway:ci-test-only@localhost:55432/blueway
       - uses: actions/upload-artifact@v4
         if: always()

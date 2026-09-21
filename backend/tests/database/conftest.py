@@ -92,8 +92,18 @@ def seed(conn):
     now = datetime.now(timezone.utc)
     ids = {x: uuid.uuid4() for x in ['user', 'admin', 'boat', 'device', 'report', 'manual', 'notification', 'history', 'audit']}
     for user, role in [('user','user'), ('admin','admin')]:
-        insert(conn, 'users', id=ids[user], firebase_uid=str(ids[user]), username=str(ids[user]),
-               role=role, status='active', created_at=now, updated_at=now)
+        insert(
+            conn,
+            'users',
+            id=ids[user],
+            firebase_uid=str(ids[user]),
+            username=str(ids[user]),
+            email=f'{ids[user]}@blueway.test',
+            role=role,
+            status='active',
+            created_at=now,
+            updated_at=now,
+        )
     insert(conn, 'boats', id=ids['boat'], user_id=ids['user'], boat_type='voilier', created_at=now, updated_at=now)
     insert(conn, 'devices', id=ids['device'], user_id=ids['user'], installation_id=uuid.uuid4(),
            platform='ios', is_active=True, last_seen_at=now)
