@@ -69,5 +69,8 @@
 
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>BlueWay utilise votre position pour vous situer sur la carte maritime et afficher vos coordonnées.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>BlueWay utilise la caméra pour photographier un objet ou un événement signalé en mer.</string>
+	
 </dict>
 </plist>

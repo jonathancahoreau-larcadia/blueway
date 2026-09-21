@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../reports/presentation/reports_screen.dart';
 import '../../map/presentation/map_screen.dart';
+import '../../camera/presentation/camera_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -36,6 +37,17 @@ class HomeScreen extends StatelessWidget {
                 );
               },
               child: const Text('Voir les signalements'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const CameraScreen(),
+                  ),
+                );
+              },
+              child: const Text('Tester la caméra'),
             ),
           ],
         ),
