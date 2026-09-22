@@ -1,4 +1,4 @@
-# blueway
+# BlueWay mobile
 
 ## Développement
 
@@ -7,30 +7,101 @@ Depuis le dossier `mobile/` :
 ```bash
 flutter pub get
 flutter devices
-flutter run -d <device-id>
+flutter run -d <device-id> --dart-define-from-file=.env.json
 ```
 
 Remplacer `<device-id>` par l’identifiant affiché par `flutter devices`.
 
-## Configuration de l’API
+## Configuration locale
 
-Lorsque le backend sera disponible :
+Créer le fichier local depuis l’exemple :
 
 ```bash
-flutter run -d <device-id> --dart-define=API_BASE_URL=https://adresse-du-backend/
+cp .env.example.json .env.json
 ```
 
-Remplacer l’URL par celle du backend accessible depuis l’appareil.
+Compléter ensuite les trois valeurs :
 
-L’écran des signalements utilise actuellement des données fictives.
-Le service HTTP est préparé et testé, mais n’est pas encore connecté à cet écran.
+```json
+{
+  "MAPBOX_ACCESS_TOKEN": "jeton-public-mapbox",
+  "MAPTILER_STYLE_URL": "https://api.maptiler.com/maps/ocean-v4/style.json?key=cle-maptiler",
+  "API_BASE_URL": "https://adresse-du-backend/"
+}
+```
+
+`API_BASE_URL` doit se terminer par `/`. Pour un backend lancé sur le poste de
+développement, utiliser :
+
+- Android Emulator : `http://10.0.2.2:8000/`
+- simulateur iOS : `http://127.0.0.1:8000/`
+- téléphone physique : `http://<adresse-ip-du-poste>:8000/`
+
+Le téléphone physique et le poste doivent être sur le même réseau. Une
+modification de `.env.json` nécessite un redémarrage complet de `flutter run`.
+Le fichier `.env.json` ne doit jamais être ajouté à Git.
+
+## Authentification et profil — BLU-51
+
+L’application utilise Firebase Authentication avec le fournisseur
+e-mail/mot de passe.
+
+Le parcours comprend :
+
+- la création du compte ;
+- l’envoi et la vérification automatique de l’adresse e-mail ;
+- la connexion et la déconnexion ;
+- la transmission du token Firebase au backend ;
+- la création d’un profil avec un nom d’utilisateur unique ;
+- la récupération du profil existant sans création implicite.
+
+Les fichiers Firebase Android et iOS sont versionnés. Après un clone,
+`flutter pub get` suffit pour utiliser la configuration existante.
+
+Firebase CLI et FlutterFire CLI servent uniquement à modifier ou régénérer
+cette configuration.
+
+Sur macOS :
+
+```bash
+brew install firebase-cli
+dart pub global activate flutterfire_cli
+gem install xcodeproj
+```
+
+Sur Windows :
+
+```powershell
+npm install -g firebase-tools
+dart pub global activate flutterfire_cli
+```
+
+Pour régénérer la configuration :
+
+```bash
+firebase login
+flutterfire configure \
+  --project=blueway-dev \
+  --platforms=android,ios \
+  --android-package-name=fr.blueway.app \
+  --ios-bundle-id=fr.blueway.app
+```
+
+Le projet de développement est `blueway-dev` et l’identifiant des applications
+est `fr.blueway.app`. Les fichiers `.env`, les clés privées Firebase Admin et
+les mots de passe ne doivent jamais être ajoutés à Git.
+
+La connexion Google, la connexion Apple et la récupération du mot de passe ne
+font pas partie de BLU-51.
 
 ## Vérifications
 
 ```bash
+dart format lib test
 flutter analyze
 flutter test
 ```
+
 ## Carte maritime et localisation
 
 La carte utilise :
@@ -39,72 +110,27 @@ La carte utilise :
 - le style MapTiler Ocean pour le fond maritime ;
 - Geolocator pour récupérer la position de l’appareil.
 
-### Configuration
+L’écran permet de demander la permission de localisation, d’afficher la
+position en degrés, minutes et secondes, et de recentrer la carte. Déplacer la
+carte ne modifie pas la dernière position GPS affichée.
 
-Copier le fichier d’exemple :
-
-```bash
-cp .env.example.json .env.json
-```
-
-Compléter `.env.json` avec les accès Mapbox et MapTiler :
-
-```json
-{
-  "MAPBOX_ACCESS_TOKEN": "jeton-public-mapbox",
-  "MAPTILER_STYLE_URL": "https://api.maptiler.com/maps/ocean-v4/style.json?key=cle-maptiler"
-}
-```
-
-Le fichier `.env.json` ne doit pas être ajouté à Git.
-
-### Lancement
-
-```bash
-flutter run -d <device-id> --dart-define-from-file=.env.json
-```
-
-### Localisation
-
-L’écran de carte permet de :
-
-- demander la permission de localisation ;
-- afficher la position en degrés, minutes et secondes ;
-- recentrer la carte sur la dernière position obtenue ;
-- déplacer et zoomer la carte sans modifier la position GPS affichée ;
-- expliquer les permissions refusées, le GPS désactivé ou une position indisponible.
-
-Les coordonnées destinées au backend restent en degrés décimaux. Le format DMS sert uniquement à l’affichage.
+Les coordonnées destinées au backend restent en degrés décimaux. Le format DMS
+sert uniquement à l’affichage.
 
 ## Prototype caméra et capteurs — BLU-55
 
-L’écran de prototype permet de :
+Le prototype permet de :
 
-- afficher l’aperçu de la caméra arrière ;
-- demander et expliquer les permissions nécessaires ;
+- afficher et capturer l’aperçu de la caméra arrière ;
 - afficher la position GPS et sa précision ;
-- bloquer la capture lorsque la précision GPS dépasse 50 mètres ;
-- mesurer l’azimut par rapport au nord vrai ;
-- calculer l’inclinaison de la visée avec le pitch et le roulis ;
-- afficher l’altitude et sa précision verticale ;
+- bloquer la capture lorsque la précision dépasse 50 mètres ;
+- mesurer l’azimut, l’inclinaison et l’altitude ;
 - figer les mesures associées au moment de la capture.
-
-### Validation sur iPhone physique
-
-Les essais ont confirmé :
-
-- un aperçu et une capture fonctionnels ;
-- une précision GPS horizontale d’environ 6 mètres pendant le test ;
-- un azimut qui évolue avec l’orientation du téléphone ;
-- une inclinaison cohérente vers le ciel, l’horizon et le sol ;
-- une altitude de 44,9 mètres avec une incertitude de ±30 mètres ;
-- le blocage de la capture lorsque la localisation précise est désactivée.
 
 ### Limites connues
 
-- l’azimut est sensible aux perturbations magnétiques et à la calibration ;
-- l’inclinaison a été vérifiée à main levée, sans support d’angle étalonné ;
-- les conventions des capteurs doivent encore être validées sur Android physique ;
-- la précision verticale est insuffisante pour utiliser seule l’altitude dans un calcul de position ;
-- iOS fournit une altitude liée au niveau moyen de la mer, tandis qu’Android fournit généralement une altitude relative à l’ellipsoïde WGS84 ;
-- la photo du prototype reste dans le stockage temporaire de l’application.
+- l’azimut dépend des perturbations magnétiques et de la calibration ;
+- l’inclinaison n’a pas été vérifiée avec un support d’angle étalonné ;
+- les conventions des capteurs doivent encore être validées sur Android réel ;
+- la précision verticale ne suffit pas seule à calculer une position ;
+- la photo reste dans le stockage temporaire de l’application.

@@ -1,62 +1,98 @@
-# Socle FastAPI
+# Backend FastAPI
 
-Depuis la racine du dépôt, avec les dépendances de `backend/requirements.txt`
-installées dans un environnement virtuel :
+## Installation locale
+
+Depuis la racine du dépôt :
 
 ```bash
-PYTHONPATH=backend uvicorn app.main:app --host 127.0.0.1 --port 8000
-PYTHONPATH=backend pytest backend/tests/api backend/tests/unit
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend/requirements.txt
+cp .env.example .env
 ```
 
-`GET /health` retourne `200 {"status":"ok"}` sans accès à PostgreSQL.
-`GET /health/ready` exécute `SELECT 1` et retourne :
+Compléter `.env`, puis démarrer PostgreSQL :
 
-- `200 {"status":"ready","database":"ok"}` si PostgreSQL répond ;
-- `503 {"status":"not_ready","database":"unavailable"}` si la configuration
-  manque ou si PostgreSQL est indisponible.
+```bash
+docker compose up -d database
+```
 
-Exporter `DATABASE_URL` dans l'environnement avant toute opération DB. Le
-lancement direct ne charge pas automatiquement `.env` ; Docker Compose fournit
-déjà cette variable au backend. Aucun secret ne doit être commité.
-`app.config.settings.get_settings()` centralise cette lecture et
-`Settings.require_database_url()` signale explicitement une valeur absente.
-Le démarrage de FastAPI et `/health` restent utilisables sans cette variable.
+Charger les variables et appliquer les migrations :
 
-## Connexions et dépendances
+```bash
+set -a
+source .env
+set +a
 
-`app.infrastructure.database.connection.database_connection()` est le contexte
-commun aux accès PostgreSQL. Il ouvre une connexion avec un délai de connexion
-de trois secondes. En mode transactionnel, le contexte psycopg valide la
-transaction en cas de succès ou l'annule en cas d'exception. La fermeture est
-garantie même si la validation échoue.
-Les erreurs remontent à l'appelant. Aucune connexion globale n'est conservée.
+cd backend
+alembic -c alembic.ini upgrade head
+cd ..
+```
 
-Le conteneur `app.dependencies.container` fournit `get_database_connection` via
-`Depends` pour les futures fabriques de repositories et `get_database_ready`
-pour le diagnostic. La dépendance fournit puis ferme la connexion sans valider
-implicitement une transaction ; une future écriture devra gérer sa transaction
-avant la réponse HTTP. Les tests peuvent remplacer `get_settings` ou ces providers
-avec `app.dependency_overrides`. Les futurs routers recevront leurs services
-depuis ce conteneur ; le domaine et l'application restent indépendants de
-FastAPI et de psycopg.
+Lancer FastAPI :
 
-Les futurs routers métier seront inclus dans `app.api.router.router`, dont le
-préfixe est `/api/v1`, avant son inclusion dans `main.py`. Aucun endpoint métier
-n'est créé ; `/api/v1` seul ne fournit donc pas encore de réponse métier.
+```bash
+PYTHONPATH=backend python -m uvicorn app.main:app \
+  --host 0.0.0.0 \
+  --port 8000
+```
 
-## Validation PostgreSQL
+## Configuration PostgreSQL
 
-La suite API/unitaire simule les accès DB et fonctionne sans serveur externe.
-Pour une validation réelle, avec un PostgreSQL accessible et `DATABASE_URL`
-exportée, appeler `/health/ready` sur le serveur lancé ci-dessus.
+Pour un backend lancé directement sur le poste :
 
-La suite existante `pytest backend/tests/database` exige
-`BLUEWAY_TEST_ADMIN_URL` et le droit de créer une base temporaire. Elle crée sa
-propre base, applique les migrations existantes et la supprime après les tests.
-Ne jamais remplacer ce mécanisme par une réinitialisation de la base partagée.
+```dotenv
+DATABASE_URL=postgresql://blueway:mot-de-passe@localhost:55432/blueway
+```
 
-Convention validée avec Brice pour les futurs repositories : qualifier
-explicitement les tables (`blueway.nom_table`). Le backend ne définit aucun
-`search_path` permanent. Le `SET LOCAL search_path = blueway, public` des
-migrations reste limité à leur exécution. Le readiness vérifie la disponibilité
-de PostgreSQL, pas l'état des migrations ni des tables.
+Psycopg utilise directement `postgresql://`. Alembic convertit automatiquement
+cette URL en `postgresql+psycopg://` pour SQLAlchemy. Docker Compose utilisait
+déjà le format standard avec le service `database` et son port interne `5432`.
+
+## Authentification Firebase
+
+Les endpoints utilisateur vérifient le token Firebase transmis par
+l’application mobile.
+
+En développement local, installer Google Cloud CLI puis exécuter :
+
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project blueway-dev
+```
+
+Le fichier `.env` doit également contenir :
+
+```dotenv
+GOOGLE_CLOUD_PROJECT=blueway-dev
+```
+
+Les identifiants Google locaux et les clés privées de compte de service ne
+doivent jamais être ajoutés à Git.
+
+## Endpoints principaux
+
+- `GET /health` vérifie que FastAPI répond.
+- `GET /health/ready` vérifie la connexion PostgreSQL.
+- `GET /api/v1/users/me` récupère le profil courant sans le créer.
+- `POST /api/v1/users/me` crée le profil de l’utilisateur vérifié.
+- `PATCH /api/v1/users/me` modifie le profil.
+- `DELETE /api/v1/users/me` supprime le profil.
+
+## Tests
+
+Depuis la racine, avec l’environnement virtuel activé :
+
+```bash
+PYTHONPATH=backend python -m pytest backend/tests/api backend/tests/unit
+```
+
+Les tests de base de données nécessitent `BLUEWAY_TEST_ADMIN_URL` et le droit de
+créer une base temporaire :
+
+```bash
+PYTHONPATH=backend python -m pytest backend/tests/database
+```
+
+Ils créent leur propre base, appliquent les migrations puis la suppriment. Ils
+ne doivent jamais réinitialiser la base partagée.
