@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'dart:async';
+
 import '../data/auth_service.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
@@ -11,11 +13,59 @@ class VerifyEmailScreen extends StatefulWidget {
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+class _VerifyEmailScreenState extends State<VerifyEmailScreen>
+    with WidgetsBindingObserver {
   bool _isLoading = false;
   String? _message;
+  Timer? _verificationTimer;
+  bool _isAutoChecking = false;
+  bool _isAppActive = true;
 
-  Future<void> _checkVerification() async {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    _verificationTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_isAppActive) {
+        _checkVerificationSilently();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _isAppActive = state == AppLifecycleState.resumed;
+
+    if (_isAppActive) {
+      _checkVerificationSilently();
+    }
+  }
+
+  @override
+  void dispose() {
+    _verificationTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _checkVerificationSilently() async {
+    if (_isLoading || _isAutoChecking) {
+      return;
+    }
+
+    _isAutoChecking = true;
+
+    try {
+      await widget.authService.reloadAndCheckEmailVerification();
+    } catch (_) {
+      // La vérification automatique réessaiera dans quelques secondes.
+    } finally {
+      _isAutoChecking = false;
+    }
+  }
+
+  Future<void> _checkVerification({bool showUnverifiedMessage = true}) async {
     setState(() {
       _isLoading = true;
       _message = null;
@@ -27,7 +77,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
       if (!mounted) return;
 
-      if (!isVerified) {
+      if (!isVerified && showUnverifiedMessage) {
         setState(() {
           _message = 'L’adresse e-mail n’est pas encore vérifiée.';
         });
@@ -107,8 +157,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               ),
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: _isLoading ? null : _checkVerification,
-                child: const Text('J’ai vérifié mon adresse'),
+                onPressed: _isLoading ? null : () => _checkVerification(),
+                child: const Text('Vérifier maintenant'),
               ),
               TextButton(
                 onPressed: _isLoading ? null : _resendEmail,

@@ -89,7 +89,10 @@ class _ProfileGateState extends State<ProfileGate> {
           );
         }
 
-        return const HomeScreen();
+        return HomeScreen(
+          profile: profile,
+          onSignOut: widget.authService.signOut,
+        );
       },
     );
   }

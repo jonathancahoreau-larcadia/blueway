@@ -55,7 +55,15 @@ class AuthService {
 
     await user.reload();
 
-    return _firebaseAuth.currentUser?.emailVerified ?? false;
+    final refreshedUser = currentUser;
+
+    if (refreshedUser == null || !refreshedUser.emailVerified) {
+      return false;
+    }
+
+    await refreshedUser.getIdToken(true);
+
+    return true;
   }
 
   Future<void> signOut() {
