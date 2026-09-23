@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../data/auth_service.dart';
 import 'register_screen.dart';
+import 'reset_password_screen.dart';
 import 'widgets/auth_layout.dart';
 import 'widgets/auth_primary_button.dart';
 import 'widgets/auth_text_field.dart';
@@ -136,6 +137,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     _signIn();
                   }
                 },
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => ResetPasswordScreen(
+                                authService: widget.authService,
+                                initialEmail: _emailController.text,
+                              ),
+                            ),
+                          );
+                        },
+                  child: const Text('Mot de passe oublié ?'),
+                ),
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),
