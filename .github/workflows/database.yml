@@ -1,38 +1,50 @@
 name: Database service
 on:
   pull_request:
-    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'Dockerfile.postgres', 'compose.yaml', '.github/workflows/database.yml']
+    branches: [dev, main]
   push:
     branches: [dev]
-    paths: ['backend/alembic/**', 'backend/alembic.ini', 'backend/app/infrastructure/database/**', 'backend/tests/database/**', 'Dockerfile.postgres', 'compose.yaml', '.github/workflows/database.yml']
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: database-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   postgis:
-    runs-on: ubuntu-latest
+    name: PostGIS
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
-      BLUEWAY_DB_PASSWORD: ci-test-only
-      BLUEWAY_DB_PORT: '55432'
+      COMPOSE_FILE: compose.test.yaml
+      COMPOSE_PROJECT_NAME: blueway-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      BLUEWAY_TEST_ADMIN_URL: postgresql://blueway_ci:ci-test-only@127.0.0.1:55433/blueway_ci
     steps:
       - uses: actions/checkout@v4
-      - name: Build and start PostgreSQL with PostGIS
-        run: docker compose up -d --build --wait database
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r backend/tests/database/requirements.txt
-      - run: python -m pytest backend/tests/database -q --junitxml=database-test-results.xml
-        env:
-          PYTHONPATH: backend
-          BLUEWAY_TEST_ADMIN_URL: postgresql://blueway:ci-test-only@localhost:55432/blueway
+          cache: pip
+          cache-dependency-path: backend/requirements-test.txt
+      - run: python -m pip install -r backend/requirements-test.txt
+      - name: Start isolated PostgreSQL with PostGIS
+        run: docker compose up -d --build --wait database
+      - name: Migrations, schema, repositories and readiness
+        run: python -m pytest backend/tests/database -q --junitxml=test-results/database.xml
+      - name: Database logs
+        if: always()
+        run: |
+          mkdir -p test-results
+          docker compose logs --no-color database > test-results/postgis.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: database-test-results
-          path: database-test-results.xml
-      - name: Show database logs
-        if: failure()
-        run: docker compose logs database
-      - name: Stop database
+          path: test-results/
+          retention-days: 14
+      - name: Remove ephemeral database
         if: always()
-        run: docker compose down --volumes
+        run: docker compose down --volumes --remove-orphans
+      - name: Summary
+        if: always()
+        run: echo "PostGIS checks — ${{ job.status }}. JUnit report and database logs available in workflow artifacts." >> "$GITHUB_STEP_SUMMARY"
