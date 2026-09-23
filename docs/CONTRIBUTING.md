@@ -76,7 +76,7 @@ git pull origin dev
 Then create a branch:
 
 ```bash
-git switch -c feature/feature-name
+git switch -c chore/BLU-50/configurer-tests-controles-automatiques-pr
 ```
 
 ## Once the work is done
@@ -84,9 +84,9 @@ git switch -c feature/feature-name
 Create the commits, then push the branch to GitHub:
 
 ```bash
-git add .
+git add <fichiers-de-la-tache>
 git commit -m "feat: feature description"
-git push -u origin feature/feature-name
+git push -u origin chore/BLU-50/configurer-tests-controles-automatiques-pr
 ```
 
 Then open a Pull Request:
@@ -108,3 +108,8 @@ No `feat/*` branch may be merged directly into `main`.
 All three team members — Jonathan, Vadim and Brice — follow the same workflow.
 
 Nobody develops directly on `main` or `dev`, including the repository owner.
+
+## Contrôles automatiques
+
+Consulter [TESTING.md](TESTING.md) pour reproduire les contrôles Python, Flutter
+et PostGIS, retrouver les rapports et configurer les contrôles obligatoires.
