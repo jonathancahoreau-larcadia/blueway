@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 
 import '../data/auth_service.dart';
 import 'register_screen.dart';
+import 'widgets/auth_layout.dart';
+import 'widgets/auth_primary_button.dart';
+import 'widgets/auth_text_field.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService authService;
+  final VoidCallback? onRegister;
 
-  const LoginScreen({super.key, required this.authService});
+  const LoginScreen({super.key, required this.authService, this.onRegister});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -83,100 +87,141 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Connexion')),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AuthLayout(
+      title: 'Blue Way',
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AuthTextField(
+                controller: _emailController,
+                label: 'E-mail',
+                hintText: 'votre@email.com',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Saisissez votre adresse e-mail.';
+                  }
+
+                  if (!value.contains('@')) {
+                    return 'Saisissez une adresse e-mail valide.';
+                  }
+
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              AuthTextField(
+                controller: _passwordController,
+                label: 'Mot de passe',
+                hintText: '••••••••',
+                icon: Icons.lock_outline,
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.password],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Saisissez votre mot de passe.';
+                  }
+
+                  return null;
+                },
+                onFieldSubmitted: (_) {
+                  if (!_isLoading) {
+                    _signIn();
+                  }
+                },
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Color(0xFFFCA5A5),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: Color(0xFFFECACA),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 28),
+              AuthPrimaryButton(
+                label: 'Connexion',
+                onPressed: _isLoading ? null : _signIn,
+                isLoading: _isLoading,
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
-                    'Bienvenue sur BlueWay',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'Adresse e-mail',
-                      border: OutlineInputBorder(),
+                    'Pas encore de compte ? ',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.30),
+                      fontSize: 12,
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Saisissez votre adresse e-mail.';
-                      }
-
-                      if (!value.contains('@')) {
-                        return 'Saisissez une adresse e-mail valide.';
-                      }
-
-                      return null;
-                    },
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.password],
-                    decoration: const InputDecoration(
-                      labelText: 'Mot de passe',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Saisissez votre mot de passe.';
-                      }
-
-                      return null;
-                    },
-                    onFieldSubmitted: (_) => _isLoading ? null : _signIn(),
-                  ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _isLoading ? null : _signIn,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Se connecter'),
-                  ),
-                  const SizedBox(height: 8),
                   TextButton(
                     onPressed: _isLoading
                         ? null
                         : () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (context) => RegisterScreen(
-                                  authService: widget.authService,
+                            if (widget.onRegister case final onRegister?) {
+                              onRegister();
+                            } else {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (context) => RegisterScreen(
+                                    authService: widget.authService,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
                           },
-                    child: const Text('Créer un compte'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF22D3EE)
+                          .withValues(alpha: 0.70),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: const Size(0, 36),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'S’inscrire',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
       ),

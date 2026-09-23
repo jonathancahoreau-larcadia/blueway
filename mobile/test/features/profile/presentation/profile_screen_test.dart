@@ -33,9 +33,29 @@ void main() {
     );
 
     expect(find.text('John'), findsOneWidget);
-    expect(find.text('user'), findsOneWidget);
-    expect(find.text('active'), findsOneWidget);
+    expect(find.text('Utilisateur'), findsOneWidget);
+    expect(find.text('Actif'), findsOneWidget);
     expect(find.text('Non'), findsNWidgets(3));
+  });
+
+  testWidgets('reste lisible et défilable sur un petit écran', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProfileScreen(profile: profile, onSignOut: () async {}),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    await tester.scrollUntilVisible(
+      find.text('Se déconnecter'),
+      250,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('Se déconnecter'), findsOneWidget);
   });
 
   testWidgets('permet de se déconnecter', (tester) async {

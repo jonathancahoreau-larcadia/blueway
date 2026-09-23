@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../data/profile_service.dart';
+import '../../auth/presentation/widgets/auth_layout.dart';
+import '../../auth/presentation/widgets/auth_primary_button.dart';
+import '../../auth/presentation/widgets/auth_text_field.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final ProfileService profileService;
@@ -27,6 +31,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   String? _errorMessage;
 
   Future<void> _createProfile() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -80,85 +85,154 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Votre profil'),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : widget.onSignOut,
-            child: const Text('Déconnexion'),
-          ),
-        ],
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Choisissez votre nom d’utilisateur',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Ce nom sera associé à votre profil BlueWay.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: _usernameController,
-                  maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Nom d’utilisateur',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    final username = value?.trim() ?? '';
+    final mediaQuery = MediaQuery.of(context);
 
-                    if (username.isEmpty) {
-                      return 'Choisissez un nom d’utilisateur.';
-                    }
+    final availableHeight =
+        mediaQuery.size.height -
+        mediaQuery.padding.vertical -
+        mediaQuery.viewInsets.bottom;
 
-                    if (username.length > 100) {
-                      return 'Le nom ne peut pas dépasser 100 caractères.';
-                    }
+    final useCompactLayout = availableHeight < 600;
 
-                    return null;
-                  },
-                  onFieldSubmitted: (_) {
-                    if (!_isLoading) {
-                      _createProfile();
-                    }
-                  },
-                ),
-                if (_errorMessage != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+    return AuthLayout(
+      title: 'Votre profil',
+      centerContent: !useCompactLayout,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!useCompactLayout) ...[
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ],
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _isLoading ? null : _createProfile,
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Créer mon profil'),
+                  child: const Icon(
+                    Icons.person_outline,
+                    color: Colors.white,
+                    size: 36,
+                  ),
                 ),
-              ],
+              ),
+              const SizedBox(height: 24),
+            ],
+            Text(
+              'Choisissez votre nom d’utilisateur',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: useCompactLayout ? 18 : 22,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
+            if (!useCompactLayout) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Ce nom sera associé à votre profil Blue Way.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 13,
+                ),
+              ),
+            ],
+            SizedBox(height: useCompactLayout ? 16 : 28),
+            AuthTextField(
+              controller: _usernameController,
+              label: 'Nom d’utilisateur',
+              hintText: 'Votre nom public',
+              icon: Icons.person_outline,
+              maxLength: 100,
+              inputFormatters: [
+                FilteringTextInputFormatter.deny(RegExp(r'\s')),
+              ],
+              textInputAction: TextInputAction.done,
+              onChanged: (_) {
+                if (_errorMessage != null) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
+              validator: (value) {
+                final username = value?.trim() ?? '';
+
+                if (username.isEmpty) {
+                  return 'Choisissez un nom d’utilisateur.';
+                }
+
+                if (username.length > 100) {
+                  return 'Le nom ne peut pas dépasser 100 caractères.';
+                }
+
+                if (RegExp(r'\s').hasMatch(username)) {
+                  return 'Le nom d’utilisateur ne peut pas contenir d’espace.';
+                }
+
+                return null;
+              },
+              onFieldSubmitted: (_) {
+                if (!_isLoading) {
+                  _createProfile();
+                }
+              },
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.redAccent.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Color(0xFFFCA5A5),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: Color(0xFFFECACA),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            AuthPrimaryButton(
+              label: 'Créer mon profil',
+              onPressed: _isLoading ? null : _createProfile,
+              isLoading: _isLoading,
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: _isLoading ? null : widget.onSignOut,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white.withValues(alpha: 0.45),
+              ),
+              child: const Text('Se déconnecter'),
+            ),
+          ],
         ),
       ),
     );

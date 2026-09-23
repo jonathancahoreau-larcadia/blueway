@@ -2,11 +2,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../data/auth_service.dart';
+import 'widgets/auth_layout.dart';
+import 'widgets/auth_primary_button.dart';
+import 'widgets/auth_text_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   final AuthService authService;
+  final VoidCallback? onBack;
 
-  const RegisterScreen({super.key, required this.authService});
+  const RegisterScreen({super.key, required this.authService, this.onBack});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -21,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _errorMessage;
 
   Future<void> _register() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmation = _confirmationController.text;
@@ -51,7 +56,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      Navigator.of(context).pop();
+      if (widget.onBack == null) {
+        Navigator.of(context).pop();
+      }
     } on FirebaseAuthException catch (error) {
       if (!mounted) return;
 
@@ -102,66 +109,130 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Inscription')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const Text(
-                'Créer un compte BlueWay',
-                style: TextStyle(fontSize: 22),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'Adresse e-mail',
-                  border: OutlineInputBorder(),
-                ),
-              ),
+    return AuthLayout(
+      title: 'Créer un compte',
+      subtitle: 'Rejoindre la communauté Blue Way',
+      showBackButton: true,
+      onBack: widget.onBack,
+      centerContent: false,
+      child: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthTextField(
+              controller: _emailController,
+              label: 'E-mail',
+              hintText: 'votre@email.com',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.newUsername],
+            ),
+            const SizedBox(height: 16),
+            Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+            const SizedBox(height: 16),
+            AuthTextField(
+              controller: _passwordController,
+              label: 'Mot de passe',
+              hintText: '••••••••',
+              icon: Icons.lock_outline,
+              obscureText: true,
+              enableInteractiveSelection: false,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.newPassword],
+            ),
+            const SizedBox(height: 16),
+            AuthTextField(
+              controller: _confirmationController,
+              label: 'Confirmer le mot de passe',
+              hintText: '••••••••',
+              icon: Icons.lock_outline,
+              obscureText: true,
+              enableInteractiveSelection: false,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.newPassword],
+              onFieldSubmitted: (_) {
+                if (!_isLoading) {
+                  _register();
+                }
+              },
+            ),
+            if (_errorMessage != null) ...[
               const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Mot de passe',
-                  border: OutlineInputBorder(),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.redAccent.withValues(alpha: 0.35),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _confirmationController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Confirmer le mot de passe',
-                  border: OutlineInputBorder(),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Color(0xFFFCA5A5),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: Color(0xFFFECACA),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isLoading ? null : _register,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Créer mon compte'),
               ),
             ],
-          ),
+            const SizedBox(height: 24),
+            AuthPrimaryButton(
+              label: 'Créer mon compte',
+              onPressed: _isLoading ? null : _register,
+              isLoading: _isLoading,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'Déjà un compte ? ',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.30),
+                    fontSize: 12,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          if (widget.onBack case final onBack?) {
+                            onBack();
+                          } else {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF22D3EE)
+                        .withValues(alpha: 0.70),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    minimumSize: const Size(0, 36),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Se connecter',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
-
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+
 import '../data/auth_service.dart';
+import 'widgets/auth_layout.dart';
+import 'widgets/auth_primary_button.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final AuthService authService;
@@ -134,51 +136,125 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   Widget build(BuildContext context) {
     final email = widget.authService.currentUser?.email;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Vérification')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
+    return AuthLayout(
+      title: 'Vérification',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              ),
+              child: const Icon(
+                Icons.mark_email_unread_outlined,
+                color: Color(0xFF22D3EE),
+                size: 40,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Vérifiez votre adresse e-mail',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            email == null
+                ? 'Un lien de vérification vous a été envoyé.'
+                : 'Un lien de vérification a été envoyé à',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          if (email != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              email,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF22D3EE),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.mark_email_unread_outlined, size: 72),
-              const SizedBox(height: 24),
-              const Text(
-                'Vérifiez votre adresse e-mail',
-                style: TextStyle(fontSize: 22),
-                textAlign: TextAlign.center,
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: const Color(0xFF22D3EE).withValues(alpha: 0.65),
+                ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                email == null
-                    ? 'Un lien de vérification vous a été envoyé.'
-                    : 'Un lien de vérification a été envoyé à $email.',
-                textAlign: TextAlign.center,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Actualisation automatique de la vérification…',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    fontSize: 11,
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isLoading ? null : () => _checkVerification(),
-                child: const Text('Vérifier maintenant'),
-              ),
-              TextButton(
-                onPressed: _isLoading ? null : _resendEmail,
-                child: const Text('Renvoyer le courriel'),
-              ),
-              TextButton(
-                onPressed: _isLoading ? null : _signOut,
-                child: const Text('Se déconnecter'),
-              ),
-              if (_isLoading) ...[
-                const SizedBox(height: 16),
-                const CircularProgressIndicator(),
-              ],
-              if (_message != null) ...[
-                const SizedBox(height: 16),
-                Text(_message!, textAlign: TextAlign.center),
-              ],
             ],
           ),
-        ),
+          if (_message != null) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              ),
+              child: Text(
+                _message!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ],
+          const SizedBox(height: 28),
+          AuthPrimaryButton(
+            label: 'Vérifier maintenant',
+            onPressed: _isLoading ? null : () => _checkVerification(),
+            isLoading: _isLoading,
+            showArrow: false,
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: _isLoading ? null : _resendEmail,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF22D3EE).withValues(alpha: 0.75),
+            ),
+            child: const Text('Renvoyer le courriel'),
+          ),
+          TextButton(
+            onPressed: _isLoading ? null : _signOut,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white.withValues(alpha: 0.45),
+            ),
+            child: const Text('Se déconnecter'),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../auth/data/auth_service.dart';
+import '../../auth/presentation/widgets/flow_transition.dart';
 import '../../home/presentation/home_screen.dart';
 import '../data/profile_service.dart';
 import '../domain/user_profile.dart';
@@ -22,6 +23,7 @@ class ProfileGate extends StatefulWidget {
 
 class _ProfileGateState extends State<ProfileGate> {
   late Future<UserProfile?> _profileFuture;
+  bool _profileWasJustCreated = false;
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _ProfileGateState extends State<ProfileGate> {
 
   void _reloadProfile() {
     setState(() {
+      _profileWasJustCreated = true;
       _profileFuture = widget.profileService.getCurrentProfile();
     });
   }
@@ -40,14 +43,26 @@ class _ProfileGateState extends State<ProfileGate> {
     return FutureBuilder<UserProfile?>(
       future: _profileFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+        late final int step;
+        late final Widget screen;
 
-        if (snapshot.hasError) {
-          return Scaffold(
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          if (_profileWasJustCreated) {
+            step = 1;
+            screen = ProfileSetupScreen(
+              profileService: widget.profileService,
+              onProfileCreated: _reloadProfile,
+              onSignOut: widget.authService.signOut,
+            );
+          } else {
+            step = 0;
+            screen = const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+        } else if (snapshot.hasError) {
+          step = 0;
+          screen = Scaffold(
             appBar: AppBar(
               title: const Text('BlueWay'),
               actions: [
@@ -77,22 +92,22 @@ class _ProfileGateState extends State<ProfileGate> {
               ),
             ),
           );
-        }
-
-        final profile = snapshot.data;
-
-        if (profile == null) {
-          return ProfileSetupScreen(
+        } else if (snapshot.data case final profile?) {
+          step = 2;
+          screen = HomeScreen(
+            profile: profile,
+            onSignOut: widget.authService.signOut,
+          );
+        } else {
+          step = 1;
+          screen = ProfileSetupScreen(
             profileService: widget.profileService,
             onProfileCreated: _reloadProfile,
             onSignOut: widget.authService.signOut,
           );
         }
 
-        return HomeScreen(
-          profile: profile,
-          onSignOut: widget.authService.signOut,
-        );
+        return FlowTransition(step: step, child: screen);
       },
     );
   }
