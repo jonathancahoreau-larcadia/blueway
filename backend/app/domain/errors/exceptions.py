@@ -36,3 +36,27 @@ class UserNotFoundError(DomainError):
 
 class EmailNotVerifiedError(DomainError):
     pass
+
+
+class InvalidReportCategoryError(DomainError):
+    pass
+
+
+class InvalidReportDescriptionError(DomainError):
+    pass
+
+
+class InvalidReportPositionError(DomainError):
+    pass
+
+
+class InvalidObservedAtError(DomainError):
+    pass
+
+
+class InactiveUserError(DomainError):
+    pass
+
+
+class ReportClientIdConflictError(DomainError):
+    pass

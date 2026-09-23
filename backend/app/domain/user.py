@@ -42,10 +42,15 @@ class User:
                 "firebase_uid cannot be empty"
             )
 
-        if not username.strip():
+        username = username.strip()
+
+        if not username:
             raise InvalidUsernameError(
                 "username cannot be empty"
             )
+
+        if any(char.isspace() for char in username):
+            raise ValueError("username cannot contain spaces")
 
         if len(username.strip()) > 100:
             raise InvalidUsernameError(
