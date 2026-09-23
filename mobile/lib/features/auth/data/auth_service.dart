@@ -34,6 +34,10 @@ class AuthService {
     );
   }
 
+  Future<void> sendPasswordResetEmail(String email) {
+    return _firebaseAuth.sendPasswordResetEmail(email: email.trim());
+  }
+
   Future<void> sendEmailVerification() async {
     final user = currentUser;
 

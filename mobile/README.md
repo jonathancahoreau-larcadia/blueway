@@ -94,6 +94,17 @@ les mots de passe ne doivent jamais être ajoutés à Git.
 La connexion Google, la connexion Apple et la récupération du mot de passe ne
 font pas partie de BLU-51.
 
+## Récupération du mot de passe — BLU-52
+
+Depuis la connexion, « Mot de passe oublié ? » permet de demander un lien de
+réinitialisation. L’adresse déjà saisie est préremplie. Firebase envoie le
+courriel et héberge la page où l’utilisateur choisit son nouveau mot de passe.
+L’application affiche les erreurs de saisie et de réseau, puis permet de
+revenir à la connexion.
+
+Aucun mot de passe n’est enregistré dans PostgreSQL. Si le courriel n’arrive
+pas, vérifier aussi les courriers indésirables.
+
 ## Vérifications
 
 ```bash
