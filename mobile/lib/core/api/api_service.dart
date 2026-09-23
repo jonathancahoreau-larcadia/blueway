@@ -1,14 +1,42 @@
 import 'package:http/http.dart' as http;
 
 import 'api_config.dart';
+import 'api_exception.dart';
 
 class ApiService {
   final http.Client _client;
   final String _baseUrl;
 
-  ApiService({required this._client, this._baseUrl = ApiConfig.baseUrl});
+  factory ApiService({
+    required http.Client client,
+    String baseUrl = ApiConfig.baseUrl,
+  }) {
+    return ApiService._(client, baseUrl);
+  }
 
-  Future<String> get(String path) async {
+  ApiService._(this._client, this._baseUrl);
+
+  Future<String> get(String path, {Map<String, String>? headers}) async {
+    final response = await _client
+        .get(_resolveUri(path), headers: headers)
+        .timeout(const Duration(seconds: 10));
+
+    return _readResponse(response);
+  }
+
+  Future<String> post(
+    String path, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    final response = await _client
+        .post(_resolveUri(path), headers: headers, body: body)
+        .timeout(const Duration(seconds: 10));
+
+    return _readResponse(response);
+  }
+
+  Uri _resolveUri(String path) {
     final baseUri = Uri.tryParse(_baseUrl);
 
     if (baseUri == null ||
@@ -20,16 +48,14 @@ class ApiService {
       );
     }
 
-    final uri = baseUri.resolve(path);
+    return baseUri.resolve(path);
+  }
 
-    final response = await _client
-        .get(uri)
-        .timeout(const Duration(seconds: 10));
-
+  String _readResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return response.body;
     }
 
-    throw Exception('Erreur HTTP ${response.statusCode}');
+    throw ApiException(statusCode: response.statusCode, body: response.body);
   }
 }

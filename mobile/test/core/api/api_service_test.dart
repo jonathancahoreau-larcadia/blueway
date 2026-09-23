@@ -5,6 +5,7 @@ import 'package:http/testing.dart';
 import 'dart:async';
 
 import 'package:blueway/core/api/api_service.dart';
+import 'package:blueway/core/api/api_exception.dart';
 
 void main() {
   test('get retourne le contenu pour une réponse HTTP 200', () async {
@@ -24,6 +25,33 @@ void main() {
     expect(result, 'Réponse de test');
   });
 
+  test('post transmet le jeton et le contenu JSON', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'POST');
+      expect(request.url, Uri.parse('https://example.com/api/v1/users/me'));
+      expect(request.headers['authorization'], 'Bearer firebase-token');
+      expect(request.headers['content-type'], 'application/json');
+      expect(request.body, '{"username":"Vadim"}');
+
+      return http.Response('{"username":"Vadim"}', 201);
+    });
+
+    addTearDown(client.close);
+
+    final api = ApiService(client: client, baseUrl: 'https://example.com/');
+
+    final result = await api.post(
+      'api/v1/users/me',
+      headers: {
+        'Authorization': 'Bearer firebase-token',
+        'Content-Type': 'application/json',
+      },
+      body: '{"username":"Vadim"}',
+    );
+
+    expect(result, '{"username":"Vadim"}');
+  });
+
   test('get lève une exception pour une réponse HTTP 500', () async {
     final client = MockClient((request) async {
       return http.Response('Erreur serveur', 500);
@@ -36,11 +64,9 @@ void main() {
     await expectLater(
       api.get('reports'),
       throwsA(
-        isA<Exception>().having(
-          (error) => error.toString(),
-          'message',
-          contains('Erreur HTTP 500'),
-        ),
+        isA<ApiException>()
+            .having((error) => error.statusCode, 'statusCode', 500)
+            .having((error) => error.body, 'body', 'Erreur serveur'),
       ),
     );
   });

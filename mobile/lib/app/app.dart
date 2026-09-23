@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../features/home/presentation/home_screen.dart';
 import 'theme.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Widget home;
 
-  // This widget is the root of the application.
+  const MyApp({super.key, required this.home});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BlueWay',
-      theme: appTheme,
-      home: const HomeScreen(),
-    );
+    return MaterialApp(title: 'BlueWay', theme: appTheme, home: home);
   }
 }

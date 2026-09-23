@@ -1,0 +1,92 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+import '../../profile/data/profile_service.dart';
+import '../../profile/presentation/profile_gate.dart';
+import '../data/auth_service.dart';
+import 'login_screen.dart';
+import 'register_screen.dart';
+import 'verify_email_screen.dart';
+import 'widgets/flow_transition.dart';
+
+class AuthGate extends StatefulWidget {
+  final AuthService authService;
+  final ProfileService profileService;
+
+  const AuthGate({
+    super.key,
+    required this.authService,
+    required this.profileService,
+  });
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  late final Stream<User?> _userChanges;
+  bool _showRegistration = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _userChanges = widget.authService.userChanges;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: _userChanges,
+      builder: (context, snapshot) {
+        late final int step;
+        late final Widget screen;
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          step = -1;
+          screen = const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          step = -1;
+          screen = const Scaffold(
+            body: Center(child: Text('Impossible de vérifier votre session.')),
+          );
+        } else if (snapshot.data case final user?) {
+          _showRegistration = false;
+          if (!user.emailVerified) {
+            step = 2;
+            screen = VerifyEmailScreen(authService: widget.authService);
+          } else {
+            step = 3;
+            screen = ProfileGate(
+              authService: widget.authService,
+              profileService: widget.profileService,
+            );
+          }
+        } else if (_showRegistration) {
+          step = 1;
+          screen = RegisterScreen(
+            authService: widget.authService,
+            onBack: () => setState(() => _showRegistration = false),
+          );
+        } else {
+          step = 0;
+          screen = LoginScreen(
+            authService: widget.authService,
+            onRegister: () => setState(() => _showRegistration = true),
+          );
+        }
+
+        return PopScope(
+          canPop: step != 1,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && step == 1) {
+              setState(() => _showRegistration = false);
+            }
+          },
+          child: FlowTransition(step: step, child: screen),
+        );
+      },
+    );
+  }
+}

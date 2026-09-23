@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blueway/app/app.dart';
+import 'package:blueway/features/home/presentation/home_screen.dart';
 
 void main() {
   testWidgets('Affiche l’accueil BlueWay', (tester) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(home: HomeScreen()));
 
     expect(find.text('BlueWay'), findsOneWidget);
     expect(find.text('Bienvenue sur BlueWay'), findsOneWidget);
@@ -12,7 +13,7 @@ void main() {
   testWidgets('Charge les signalements puis revient à l’accueil', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(home: HomeScreen()));
 
     await tester.tap(find.text('Voir les signalements'));
     await tester.pumpAndSettle();
