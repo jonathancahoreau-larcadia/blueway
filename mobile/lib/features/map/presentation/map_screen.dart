@@ -9,6 +9,7 @@ import 'package:precise_compass/precise_compass.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/map/map_config.dart';
+import '../../../core/location/coordinate_formatter.dart';
 import '../../../core/location/location_service.dart';
 import '../../../core/sensors/device_orientation_service.dart';
 import '../../reports/presentation/report_composer_sheet.dart';
@@ -571,8 +572,8 @@ class _MapScreenState extends State<MapScreen> {
         : _locationError ??
               (_position == null
                   ? 'Position indisponible'
-                  : 'Lat. ${_position!.latitude.toStringAsFixed(5)}\n'
-                        'Lon. ${_position!.longitude.toStringAsFixed(5)}');
+                  : 'Lat. ${formatDms(_position!.latitude, isLatitude: true)}\n'
+                        'Lon. ${formatDms(_position!.longitude, isLatitude: false)}');
 
     return PopScope(
       canPop: !_reportComposerOpen,
@@ -807,8 +808,9 @@ class _MapScreenState extends State<MapScreen> {
                               child: ValueListenableBuilder<Point?>(
                                 valueListenable: _reportPoint,
                                 builder: (context, point, _) => Text(
-                                  '${(point?.coordinates.lat.toDouble() ?? _position!.latitude).toStringAsFixed(5)}, '
-                                  '${(point?.coordinates.lng.toDouble() ?? _position!.longitude).toStringAsFixed(5)}',
+                                  '${formatDms(point?.coordinates.lat.toDouble() ?? _position!.latitude, isLatitude: true)}\n'
+                                  '${formatDms(point?.coordinates.lng.toDouble() ?? _position!.longitude, isLatitude: false)}',
+                                  textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Color(0xFF243243),
                                     fontSize: 11,
