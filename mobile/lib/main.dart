@@ -9,6 +9,7 @@ import 'core/api/api_service.dart';
 import 'features/auth/data/auth_service.dart';
 import 'features/auth/presentation/auth_gate.dart';
 import 'features/profile/data/profile_service.dart';
+import 'features/reports/data/manual_report_service.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -24,10 +25,18 @@ Future<void> main() async {
     apiService: apiService,
     getIdToken: authService.getIdToken,
   );
+  final reportService = ManualReportService(
+    apiService: apiService,
+    getIdToken: authService.getIdToken,
+  );
 
   runApp(
     MyApp(
-      home: AuthGate(authService: authService, profileService: profileService),
+      home: AuthGate(
+        authService: authService,
+        profileService: profileService,
+        reportService: reportService,
+      ),
     ),
   );
 }

@@ -5,16 +5,19 @@ import '../../auth/presentation/widgets/flow_transition.dart';
 import '../../home/presentation/home_screen.dart';
 import '../data/profile_service.dart';
 import '../domain/user_profile.dart';
+import '../../reports/data/manual_report_service.dart';
 import 'profile_setup_screen.dart';
 
 class ProfileGate extends StatefulWidget {
   final AuthService authService;
   final ProfileService profileService;
+  final ManualReportService reportService;
 
   const ProfileGate({
     super.key,
     required this.authService,
     required this.profileService,
+    required this.reportService,
   });
 
   @override
@@ -97,6 +100,7 @@ class _ProfileGateState extends State<ProfileGate> {
           screen = HomeScreen(
             profile: profile,
             onSignOut: widget.authService.signOut,
+            reportService: widget.reportService,
           );
         } else {
           step = 1;

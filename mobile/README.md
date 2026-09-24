@@ -118,15 +118,24 @@ flutter test
 La carte utilise :
 
 - le SDK Mapbox pour l’affichage et les interactions ;
-- le style MapTiler Ocean pour le fond maritime ;
+- le style Mapbox Standard pour le fond ;
 - Geolocator pour récupérer la position de l’appareil.
 
 L’écran permet de demander la permission de localisation, d’afficher la
-position en degrés, minutes et secondes, et de recentrer la carte. Déplacer la
-carte ne modifie pas la dernière position GPS affichée.
+position en degrés décimaux, et de recentrer la carte. Déplacer la carte ne
+modifie pas la dernière position GPS affichée.
 
-Les coordonnées destinées au backend restent en degrés décimaux. Le format DMS
-sert uniquement à l’affichage.
+## Signalement manuel — BLU-54
+
+Depuis la carte, le bouton `+` ouvre un formulaire avec trois catégories et un
+commentaire facultatif de 250 caractères maximum. Déplacer la carte sous le
+repère choisit la position. La publication envoie le token Firebase à
+`POST /api/v1/reports` avec un point GeoJSON `[longitude, latitude]`, la date
+du signalement et un `client_report_id` UUID. Un nouvel essai sans modification
+réutilise le même identifiant pour éviter les doublons.
+
+L’API locale doit inclure l’endpoint backend de BLU-104 pour tester la
+publication sur téléphone ; une ancienne version du backend répondra 404.
 
 ## Prototype caméra et capteurs — BLU-55
 

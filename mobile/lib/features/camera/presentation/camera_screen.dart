@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:precise_compass/precise_compass.dart';
 
 import '../../../core/location/location_service.dart';
+import '../../../core/location/coordinate_formatter.dart';
 import '../../../core/sensors/device_orientation_service.dart';
 import '../../../core/sensors/camera_orientation.dart';
 import '../domain/capture_requirements.dart';
@@ -236,8 +237,8 @@ class _CameraScreenState extends State<CameraScreen> {
       setState(() {
         _captureStatus =
             'Photo capturée.\n'
-            'GPS : ${position.latitude.toStringAsFixed(5)}, '
-            '${position.longitude.toStringAsFixed(5)} '
+            'GPS : ${formatDms(position.latitude, isLatitude: true)}, '
+            '${formatDms(position.longitude, isLatitude: false)} '
             '(±${position.accuracy.toStringAsFixed(1)} m)\n'
             '${_altitudeStatus(position)}\n'
             'Azimut nord vrai : ${heading.toStringAsFixed(1)}°\n'
@@ -337,8 +338,8 @@ class _CameraScreenState extends State<CameraScreen> {
       return 'Position GPS indisponible.';
     }
 
-    return 'Latitude : ${position.latitude.toStringAsFixed(5)}\n'
-        'Longitude : ${position.longitude.toStringAsFixed(5)}\n'
+    return 'Latitude : ${formatDms(position.latitude, isLatitude: true)}\n'
+        'Longitude : ${formatDms(position.longitude, isLatitude: false)}\n'
         'Précision : ±${position.accuracy.toStringAsFixed(1)} m\n'
         '${_altitudeStatus(position)}';
   }

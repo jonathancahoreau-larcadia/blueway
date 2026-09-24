@@ -1,0 +1,137 @@
+import 'package:blueway/features/reports/presentation/report_composer_sheet.dart';
+import 'package:blueway/features/reports/domain/manual_report.dart';
+import 'package:blueway/core/api/api_exception.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('garde le texte et le focus quand le clavier masque le repère', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    Widget sheetWithInsets(double keyboardHeight) => MaterialApp(
+      home: MediaQuery(
+        data: MediaQueryData(
+          size: const Size(390, 844),
+          viewInsets: EdgeInsets.only(bottom: keyboardHeight),
+        ),
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            children: [
+              if (keyboardHeight == 0)
+                const Positioned(top: 0, child: SizedBox(width: 1, height: 1)),
+              const Positioned(
+                key: ValueKey('report-composer'),
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: ReportComposerSheet(onClose: _noop),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(sheetWithInsets(0));
+    expect(find.byTooltip('Animal marin'), findsOneWidget);
+    expect(find.byTooltip('Obstacle'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(
+      ReportComposerSheet.heightFor(const MediaQueryData(size: Size(390, 844))),
+      300,
+    );
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(
+      find.byType(TextField),
+      'Un commentaire sur deux lignes\navec une précision',
+    );
+    await tester.pumpWidget(sheetWithInsets(300));
+    expect(
+      find.text('Un commentaire sur deux lignes\navec une précision'),
+      findsOneWidget,
+    );
+
+    expect(find.byTooltip('Animal marin'), findsOneWidget);
+    expect(find.byTooltip('Obstacle'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Le clavier reste actif');
+    expect(find.text('Le clavier reste actif'), findsOneWidget);
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+      isTrue,
+    );
+    final button = find.widgetWithText(FilledButton, 'Publier le signalement');
+    expect(button, findsOneWidget);
+    expect(tester.getBottomLeft(button).dy, lessThan(844 - 300));
+    expect(
+      ReportComposerSheet.heightFor(
+        const MediaQueryData(
+          size: Size(390, 844),
+          viewInsets: EdgeInsets.only(bottom: 300),
+        ),
+      ),
+      300,
+    );
+
+    await tester.pumpWidget(sheetWithInsets(0));
+    expect(find.byTooltip('Animal marin'), findsOneWidget);
+  });
+
+  testWidgets('publie la catégorie et le commentaire, puis permet un réessai', (
+    tester,
+  ) async {
+    var attempts = 0;
+    ReportCategory? submittedCategory;
+    String? submittedDescription;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReportComposerSheet(
+            onClose: _noop,
+            onPublish: (category, description) async {
+              attempts++;
+              submittedCategory = category;
+              submittedDescription = description;
+              if (attempts == 1) {
+                throw const ApiException(statusCode: 409, body: 'conflit');
+              }
+            },
+          ),
+        ),
+      ),
+    );
+
+    final publish = find.text('Publier le signalement');
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+    await tester.tap(find.byTooltip('Pollution'));
+    await tester.enterText(find.byType(TextField), '  Pollution visible  ');
+    await tester.tap(publish);
+    await tester.pump();
+    expect(attempts, 1);
+    expect(submittedCategory, ReportCategory.pollution);
+    expect(submittedDescription, 'Pollution visible');
+    expect(
+      find.text('Ce signalement a changé depuis le premier envoi.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(publish);
+    await tester.pump();
+    expect(attempts, 2);
+    expect(
+      find.text('Ce signalement a changé depuis le premier envoi.'),
+      findsNothing,
+    );
+  });
+}
+
+void _noop() {}
