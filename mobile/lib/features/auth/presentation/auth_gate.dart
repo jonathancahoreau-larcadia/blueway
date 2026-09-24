@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../profile/data/profile_service.dart';
 import '../../profile/presentation/profile_gate.dart';
+import '../../reports/data/manual_report_service.dart';
 import '../data/auth_service.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -12,11 +13,13 @@ import 'widgets/flow_transition.dart';
 class AuthGate extends StatefulWidget {
   final AuthService authService;
   final ProfileService profileService;
+  final ManualReportService reportService;
 
   const AuthGate({
     super.key,
     required this.authService,
     required this.profileService,
+    required this.reportService,
   });
 
   @override
@@ -61,6 +64,7 @@ class _AuthGateState extends State<AuthGate> {
             screen = ProfileGate(
               authService: widget.authService,
               profileService: widget.profileService,
+              reportService: widget.reportService,
             );
           }
         } else if (_showRegistration) {
