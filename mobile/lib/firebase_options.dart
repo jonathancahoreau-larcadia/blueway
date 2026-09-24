@@ -59,10 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDJzirbyjTBE4TNGWLKErwym0m4TFLApic',
-    appId: '1:495354488401:ios:fedb4e54e53e450aceba70',
+    appId: '1:495354488401:ios:bed8af6fbf5d8276ceba70',
     messagingSenderId: '495354488401',
     projectId: 'blueway-dev',
     storageBucket: 'blueway-dev.firebasestorage.app',
-    iosBundleId: 'fr.blueway.app',
+    iosBundleId: 'fr.blueway-arcadia.app',
   );
 }

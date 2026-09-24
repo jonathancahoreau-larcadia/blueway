@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/notifications/push_notification_listener.dart';
 import '../../profile/data/profile_service.dart';
 import '../../profile/presentation/profile_gate.dart';
 import '../../reports/data/manual_report_service.dart';
@@ -61,10 +62,12 @@ class _AuthGateState extends State<AuthGate> {
             screen = VerifyEmailScreen(authService: widget.authService);
           } else {
             step = 3;
-            screen = ProfileGate(
-              authService: widget.authService,
-              profileService: widget.profileService,
-              reportService: widget.reportService,
+            screen = PushNotificationListener(
+              child: ProfileGate(
+                authService: widget.authService,
+                profileService: widget.profileService,
+                reportService: widget.reportService,
+              ),
             );
           }
         } else if (_showRegistration) {
